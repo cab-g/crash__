@@ -1,0 +1,494 @@
+<title>¢ra$h__</title>
+<style>
+  :root {
+    --paper: #eeefe3;
+    --surface: #ffffff;
+    --surface-2: #f7f7ec;
+    --ink: #16262a;
+    --ink-dim: #5c6d6b;
+    --ink-faint: #93a09a;
+    --line: #dfe1d0;
+    --debt: #b64f2e;
+    --debt-soft: #f3ded1;
+    --cash: #1f7a78;
+    --cash-soft: #dcecea;
+    --invest: #a97a22;
+    --invest-soft: #f1e4c4;
+    --accent: #1f7a78;
+    --radius: 14px;
+    --shadow: 0 1px 2px rgba(22, 38, 42, 0.06), 0 8px 24px -12px rgba(22, 38, 42, 0.18);
+    color-scheme: light;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --paper: #0f1b1d;
+      --surface: #16262a;
+      --surface-2: #1b2c2f;
+      --ink: #ece6d6;
+      --ink-dim: #9aada9;
+      --ink-faint: #64756f;
+      --line: #2a3b3d;
+      --debt: #e0825d;
+      --debt-soft: #3a2a24;
+      --cash: #56bcb8;
+      --cash-soft: #1c3634;
+      --invest: #e3bd6c;
+      --invest-soft: #3a3220;
+      --accent: #56bcb8;
+      --shadow: 0 1px 2px rgba(0, 0, 0, 0.3), 0 8px 24px -12px rgba(0, 0, 0, 0.5);
+      color-scheme: dark;
+    }
+  }
+  :root[data-theme="dark"] {
+    --paper: #0f1b1d;
+    --surface: #16262a;
+    --surface-2: #1b2c2f;
+    --ink: #ece6d6;
+    --ink-dim: #9aada9;
+    --ink-faint: #64756f;
+    --line: #2a3b3d;
+    --debt: #e0825d;
+    --debt-soft: #3a2a24;
+    --cash: #56bcb8;
+    --cash-soft: #1c3634;
+    --invest: #e3bd6c;
+    --invest-soft: #3a3220;
+    --accent: #56bcb8;
+    --shadow: 0 1px 2px rgba(0, 0, 0, 0.3), 0 8px 24px -12px rgba(0, 0, 0, 0.5);
+    color-scheme: dark;
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    background: var(--paper);
+    color: var(--ink);
+    font-family: "IBM Plex Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    padding-inline: max(16px, env(safe-area-inset-left, 0px));
+    padding-block: 28px 64px;
+  }
+  .wrap { max-width: 960px; margin: 0 auto; display: flex; flex-direction: column; gap: 22px; }
+
+  h1, h2, h3 { font-family: "Fraunces", Georgia, serif; margin: 0; text-wrap: balance; }
+  .num { font-family: "IBM Plex Mono", ui-monospace, monospace; font-variant-numeric: tabular-nums; }
+
+  /* ---------- header ---------- */
+  header { display: flex; justify-content: space-between; align-items: flex-end; gap: 16px; flex-wrap: wrap; }
+  .wordmark { font-size: 34px; font-weight: 600; font-optical-sizing: auto; letter-spacing: -0.01em; }
+  .tagline { color: var(--ink-dim); font-size: 14px; margin-top: 4px; }
+  .status { text-align: right; font-size: 13px; color: var(--ink-dim); display: flex; flex-direction: column; align-items: flex-end; gap: 6px; }
+  .signout {
+    font: inherit; font-size: 12px; color: var(--ink-dim); background: none; border: 1px solid var(--line);
+    border-radius: 999px; padding: 4px 12px; cursor: pointer;
+  }
+  .signout:hover { color: var(--ink); border-color: var(--ink-faint); }
+
+  /* ---------- auth gate ---------- */
+  #authGate {
+    background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius);
+    box-shadow: var(--shadow); padding: 36px 28px; max-width: 380px; margin: 12vh auto 0;
+    display: flex; flex-direction: column; gap: 14px;
+  }
+  #authGate h1 { font-size: 26px; }
+  #authGate p.sub { color: var(--ink-dim); font-size: 14px; margin: -8px 0 4px; }
+  #authGate label { font-size: 12px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--ink-dim); display: block; margin-bottom: 4px; }
+  #authGate input {
+    width: 100%; font: inherit; font-size: 15px; padding: 10px 12px; border-radius: 8px;
+    border: 1px solid var(--line); background: var(--surface-2); color: var(--ink);
+  }
+  #authGate input:focus { outline: 2px solid var(--accent); outline-offset: 1px; }
+  #authGate button {
+    font: inherit; font-size: 15px; font-weight: 500; padding: 11px 16px; border-radius: 8px; border: none;
+    background: var(--accent); color: var(--surface); cursor: pointer; margin-top: 6px;
+  }
+  #authGate button:hover { filter: brightness(1.08); }
+  #authGate button:disabled { opacity: 0.6; cursor: default; }
+  #authError { color: var(--debt); font-size: 13px; min-height: 1em; }
+
+  /* ---------- stat tiles ---------- */
+  .stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
+  .tile {
+    background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius);
+    padding: 16px 16px 14px; box-shadow: var(--shadow);
+  }
+  .tile .label { font-size: 11px; text-transform: uppercase; letter-spacing: 0.07em; color: var(--ink-dim); display: flex; align-items: center; gap: 6px; }
+  .dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; flex: none; }
+  .tile .value { font-size: 22px; font-weight: 600; margin-top: 6px; }
+  .tile .sub { font-size: 12px; color: var(--ink-faint); margin-top: 2px; }
+
+  /* ---------- cards ---------- */
+  .card {
+    background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius);
+    box-shadow: var(--shadow); padding: 20px 22px 22px;
+  }
+  .card h2 { font-size: 19px; }
+  .card .card-sub { color: var(--ink-dim); font-size: 13px; margin-top: 3px; }
+  .legend { display: flex; gap: 16px; flex-wrap: wrap; margin-top: 14px; font-size: 12px; color: var(--ink-dim); }
+  .legend span { display: inline-flex; align-items: center; gap: 6px; }
+  .legend .swatch { width: 14px; height: 3px; border-radius: 2px; display: inline-block; }
+  .legend .swatch.dashed { background: none; border-top: 2px dashed currentColor; height: 0; }
+  svg.chart { width: 100%; height: auto; margin-top: 8px; overflow: visible; }
+  .chart text { font-family: "IBM Plex Mono", monospace; fill: var(--ink-faint); }
+  .chart .gridline { stroke: var(--line); stroke-width: 1; }
+  .chart .today-line { stroke: var(--ink-faint); stroke-width: 1; stroke-dasharray: 2 3; }
+
+  .two-col { display: grid; grid-template-columns: 1.05fr 1fr; gap: 16px; align-items: start; }
+
+  table.budget { width: 100%; border-collapse: collapse; font-size: 13.5px; margin-top: 8px; }
+  table.budget th { text-align: left; font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em; color: var(--ink-faint); font-weight: 500; padding-bottom: 6px; border-bottom: 1px solid var(--line); }
+  table.budget td { padding: 6px 0; border-bottom: 1px solid var(--line); }
+  table.budget td.amt { text-align: right; }
+  table.budget tr.group td { padding-top: 14px; font-weight: 600; color: var(--ink-dim); font-size: 11px; text-transform: uppercase; letter-spacing: 0.06em; border-bottom: none; }
+  table.budget tr.total td { font-weight: 600; border-top: 1px solid var(--line); border-bottom: none; padding-top: 8px; }
+  .surplus-line { display: flex; justify-content: space-between; align-items: baseline; margin-top: 14px; padding-top: 12px; border-top: 1px solid var(--line); }
+  .surplus-line .val { font-size: 20px; font-weight: 600; color: var(--cash); }
+
+  .phase-list { display: flex; flex-direction: column; gap: 12px; margin-top: 10px; }
+  .phase {
+    border: 1px solid var(--line); border-radius: 10px; padding: 11px 13px; background: var(--surface-2);
+  }
+  .phase-top { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
+  .phase-top .title { font-weight: 600; font-size: 14px; }
+  .phase-top .amount { font-size: 13.5px; }
+  .pill {
+    font-size: 10.5px; text-transform: uppercase; letter-spacing: 0.05em; padding: 2px 8px; border-radius: 999px;
+    font-weight: 600;
+  }
+  .pill.in_progress { background: var(--debt-soft); color: var(--debt); }
+  .pill.not_started { background: var(--line); color: var(--ink-dim); }
+  .pill.done { background: var(--cash-soft); color: var(--cash); }
+  .phase-bar { height: 4px; border-radius: 2px; background: var(--line); margin-top: 8px; overflow: hidden; }
+  .phase-bar > div { height: 100%; background: var(--cash); }
+  .phase-notes { font-size: 12px; color: var(--ink-dim); margin-top: 6px; }
+  .phase-date { font-size: 11.5px; color: var(--ink-faint); margin-top: 2px; }
+
+  footer { text-align: center; font-size: 12px; color: var(--ink-faint); padding-top: 8px; }
+  footer a { color: inherit; }
+
+  #app[hidden], #authGate[hidden] { display: none !important; }
+  #loading { text-align: center; color: var(--ink-dim); font-size: 14px; padding: 20vh 0; }
+
+  @media (max-width: 640px) {
+    .stats { grid-template-columns: repeat(2, 1fr); }
+    .two-col { grid-template-columns: 1fr; }
+    .wordmark { font-size: 28px; }
+  }
+</style>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
+
+<div id="loading">loading molt…</div>
+
+<div id="authGate" hidden>
+  <h1>¢ra$h__ 🦀</h1>
+  <p class="sub">Sign in to see the numbers.</p>
+  <div>
+    <label for="email">Email</label>
+    <input id="email" type="email" autocomplete="username" value="abbottchris94@gmail.com" />
+  </div>
+  <div>
+    <label for="password">Password</label>
+    <input id="password" type="password" autocomplete="current-password" />
+  </div>
+  <button id="signInBtn">Sign in</button>
+  <div id="authError"></div>
+</div>
+
+<div id="app" hidden>
+  <div class="wrap">
+    <header>
+      <div>
+        <div class="wordmark">¢ra$h__ 🦀</div>
+        <div class="tagline">Debt shed, cash grown, cash put to work.</div>
+      </div>
+      <div class="status">
+        <span id="whoami"></span>
+        <button class="signout" id="signOutBtn">Sign out</button>
+      </div>
+    </header>
+
+    <section class="stats" id="stats"></section>
+
+    <section class="card">
+      <h2>The climb</h2>
+      <div class="card-sub">Debt, cash buffer and investments — solid line is actual, dashed is the plan from here.</div>
+      <div id="chartPrimary"></div>
+      <div class="legend">
+        <span><i class="swatch" style="background:var(--debt)"></i> Debt</span>
+        <span><i class="swatch" style="background:var(--cash)"></i> Cash buffer</span>
+        <span><i class="swatch" style="background:var(--invest)"></i> Investments</span>
+        <span><i class="swatch dashed" style="color:var(--ink-faint)"></i> Projected</span>
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>Surplus vs. buffer</h2>
+      <div class="card-sub">What net salary minus expenses generates each month, against what's actually landing in the buffer.</div>
+      <div id="chartSecondary"></div>
+      <div class="legend">
+        <span><i class="swatch" style="background:var(--ink-dim)"></i> Cumulative surplus</span>
+        <span><i class="swatch" style="background:var(--cash)"></i> Buffer balance</span>
+      </div>
+    </section>
+
+    <div class="two-col">
+      <section class="card">
+        <h2>Monthly budget</h2>
+        <div class="card-sub">SEK, from the plan.</div>
+        <table class="budget" id="budgetTable"></table>
+        <div class="surplus-line">
+          <span>Monthly surplus</span>
+          <span class="val num" id="surplusValue">—</span>
+        </div>
+      </section>
+
+      <section class="card">
+        <h2>Debt &amp; savings roadmap</h2>
+        <div class="card-sub">Klarna → credit card → mum → buffer → investing.</div>
+        <div class="phase-list" id="phaseList"></div>
+      </section>
+    </div>
+
+    <footer>
+      Built from Crab's finance sheet · numbers live in a private Supabase project · last snapshot <span id="lastSnapshot"></span>
+    </footer>
+  </div>
+</div>
+
+<script>
+(function () {
+  "use strict";
+
+  var SUPABASE_URL = "https://xxukgfrddvmanoewieqa.supabase.co";
+  var SUPABASE_KEY = "sb_publishable_O8OsEr-6MDrh2XhM4-p_bg_YFv69FNK";
+  var sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {
+    auth: { persistSession: true, autoRefreshToken: true }
+  });
+
+  var fmt = new Intl.NumberFormat("sv-SE", { maximumFractionDigits: 0 });
+  function sek(n) { return fmt.format(Math.round(n)) + " kr"; }
+  function signedSek(n) { return (n >= 0 ? "+" : "") + fmt.format(Math.round(n)) + " kr"; }
+
+  var $ = function (id) { return document.getElementById(id); };
+
+  // ---------------- auth ----------------
+  function showGate() { $("loading").hidden = true; $("authGate").hidden = false; $("app").hidden = true; }
+  function showApp() { $("loading").hidden = true; $("authGate").hidden = true; $("app").hidden = false; }
+
+  $("signInBtn").addEventListener("click", function () { doSignIn(); });
+  $("password").addEventListener("keydown", function (e) { if (e.key === "Enter") doSignIn(); });
+
+  function doSignIn() {
+    var email = $("email").value.trim();
+    var password = $("password").value;
+    var btn = $("signInBtn");
+    $("authError").textContent = "";
+    if (!email || !password) { $("authError").textContent = "Enter your email and password."; return; }
+    btn.disabled = true; btn.textContent = "Signing in…";
+    sb.auth.signInWithPassword({ email: email, password: password }).then(function (res) {
+      btn.disabled = false; btn.textContent = "Sign in";
+      if (res.error) { $("authError").textContent = res.error.message; return; }
+      boot(res.data.session);
+    });
+  }
+
+  $("signOutBtn").addEventListener("click", function () {
+    sb.auth.signOut().then(function () { showGate(); });
+  });
+
+  sb.auth.getSession().then(function (res) {
+    var session = res.data && res.data.session;
+    if (session) { boot(session); } else { showGate(); }
+  });
+
+  // ---------------- data + render ----------------
+  function boot(session) {
+    showApp();
+    $("whoami").textContent = "Signed in as " + (session.user.email || "you");
+    load();
+  }
+
+  function load() {
+    Promise.all([
+      sb.from("net_worth_snapshots").select("*").order("date", { ascending: true }),
+      sb.from("budget_lines").select("*").order("sort_order", { ascending: true }),
+      sb.from("debt_phases").select("*").order("sort_order", { ascending: true })
+    ]).then(function (results) {
+      var snapshots = (results[0].data || []);
+      var budget = (results[1].data || []);
+      var phases = (results[2].data || []);
+      render(snapshots, budget, phases);
+    });
+  }
+
+  function render(snapshots, budget, phases) {
+    if (!snapshots.length) return;
+
+    var latestActual = null;
+    for (var i = 0; i < snapshots.length; i++) {
+      if (!snapshots[i].is_projected) latestActual = snapshots[i];
+    }
+    if (!latestActual) latestActual = snapshots[0];
+
+    // ---- stat tiles ----
+    var net = latestActual.cash_sek + latestActual.investment_sek - latestActual.debt_sek;
+    $("stats").innerHTML =
+      tile("var(--debt)", "Debt", sek(latestActual.debt_sek), "Klarna + credit card + mum") +
+      tile("var(--cash)", "Cash buffer", sek(latestActual.cash_sek), "Emergency fund") +
+      tile("var(--invest)", "Investments", sek(latestActual.investment_sek), "ISK + pension") +
+      tile("var(--ink-dim)", "Net position", signedSek(net), "Cash + investments − debt");
+
+    $("lastSnapshot").textContent = fmtDate(latestActual.date);
+
+    // ---- primary chart ----
+    var months = snapshots.map(function (s) { return monthLabel(s.date); });
+    var actualCount = 0;
+    for (var j = 0; j < snapshots.length; j++) { if (!snapshots[j].is_projected) actualCount = j + 1; }
+    drawChart($("chartPrimary"), months, [
+      { key: "debt", color: "var(--debt)", values: snapshots.map(function (s) { return s.debt_sek; }) },
+      { key: "cash", color: "var(--cash)", values: snapshots.map(function (s) { return s.cash_sek; }) },
+      { key: "invest", color: "var(--invest)", values: snapshots.map(function (s) { return s.investment_sek; }) }
+    ], actualCount);
+
+    // ---- budget table + surplus ----
+    var groups = ["Income", "Fixed", "Variable"];
+    var byGroup = {};
+    groups.forEach(function (g) { byGroup[g] = []; });
+    budget.forEach(function (b) { if (byGroup[b.group_name]) byGroup[b.group_name].push(b); });
+
+    var rows = "";
+    groups.forEach(function (g) {
+      rows += "<tr class='group'><td colspan='2'>" + g + "</td></tr>";
+      byGroup[g].forEach(function (b) {
+        rows += "<tr><td>" + b.category + (b.notes ? " <span style='color:var(--ink-faint)'>· " + b.notes + "</span>" : "") + "</td>" +
+          "<td class='amt num'>" + sek(b.budgeted_sek) + "</td></tr>";
+      });
+    });
+    $("budgetTable").innerHTML = rows;
+
+    var netSalaryRow = budget.find(function (b) { return b.category === "Net salary (estimate)"; });
+    var netSalary = netSalaryRow ? netSalaryRow.budgeted_sek : 0;
+    var fixedTotal = byGroup["Fixed"].reduce(function (s, b) { return s + b.budgeted_sek; }, 0);
+    var variableTotal = byGroup["Variable"].reduce(function (s, b) { return s + b.budgeted_sek; }, 0);
+    var surplus = netSalary - fixedTotal - variableTotal;
+    $("surplusValue").textContent = sek(surplus);
+
+    // ---- secondary chart: cumulative surplus vs buffer ----
+    var cumulative = [];
+    var running = 0;
+    for (var m = 0; m < months.length; m++) {
+      if (m > 0) running += surplus;
+      cumulative.push(running);
+    }
+    var bufferSeries = snapshots.map(function (s) { return s.cash_sek; });
+    drawChart($("chartSecondary"), months, [
+      { key: "surplus", color: "var(--ink-dim)", values: cumulative },
+      { key: "buffer", color: "var(--cash)", values: bufferSeries }
+    ], actualCount, true);
+
+    // ---- roadmap ----
+    $("phaseList").innerHTML = phases.map(function (p) {
+      var barHtml = "";
+      if (p.target_sek) {
+        var pct = Math.max(0, Math.min(100, (p.current_sek / p.target_sek) * 100));
+        barHtml = "<div class='phase-bar'><div style='width:" + pct + "%'></div></div>";
+      }
+      var amountText = p.target_sek
+        ? sek(p.current_sek) + " of " + sek(p.target_sek)
+        : sek(p.current_sek) + " owed";
+      return "<div class='phase'>" +
+        "<div class='phase-top'><span class='title'>" + p.title + "</span>" +
+        "<span class='pill " + p.status + "'>" + p.status.replace("_", " ") + "</span></div>" +
+        "<div class='amount num'>" + amountText + "</div>" +
+        barHtml +
+        (p.target_date ? "<div class='phase-date'>Target: " + fmtDate(p.target_date) + "</div>" : "") +
+        (p.notes ? "<div class='phase-notes'>" + p.notes + "</div>" : "") +
+        "</div>";
+    }).join("");
+  }
+
+  function tile(color, label, value, sub) {
+    return "<div class='tile'><div class='label'><i class='dot' style='background:" + color + "'></i>" + label + "</div>" +
+      "<div class='value num'>" + value + "</div><div class='sub'>" + sub + "</div></div>";
+  }
+
+  function monthLabel(dateStr) {
+    var d = new Date(dateStr + "T00:00:00");
+    return d.toLocaleDateString("en-GB", { month: "short" });
+  }
+  function fmtDate(dateStr) {
+    var d = new Date(dateStr + "T00:00:00");
+    return d.toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" });
+  }
+
+  // ---------------- chart drawing (hand-rolled SVG) ----------------
+  function drawChart(container, labels, series, actualCount, skipEndDot) {
+    var W = 640, H = 260, padL = 46, padR = 12, padT = 14, padB = 28;
+    var plotW = W - padL - padR, plotH = H - padT - padB;
+    var n = labels.length;
+    var xStep = n > 1 ? plotW / (n - 1) : 0;
+
+    var maxVal = 0;
+    series.forEach(function (s) { s.values.forEach(function (v) { if (v > maxVal) maxVal = v; }); });
+    maxVal = maxVal <= 0 ? 1 : maxVal * 1.15;
+
+    function x(i) { return padL + i * xStep; }
+    function y(v) { return padT + plotH - (v / maxVal) * plotH; }
+
+    var svg = "<svg class='chart' viewBox='0 0 " + W + " " + H + "' xmlns='http://www.w3.org/2000/svg'>";
+
+    // gridlines + y labels (4 bands)
+    var bands = 4;
+    for (var b = 0; b <= bands; b++) {
+      var val = (maxVal / bands) * b;
+      var yy = y(val);
+      svg += "<line class='gridline' x1='" + padL + "' x2='" + (W - padR) + "' y1='" + yy + "' y2='" + yy + "'/>";
+      svg += "<text x='" + (padL - 8) + "' y='" + (yy + 3) + "' font-size='9.5' text-anchor='end'>" + kLabel(val) + "</text>";
+    }
+
+    // x labels
+    for (var i = 0; i < n; i++) {
+      svg += "<text x='" + x(i) + "' y='" + (H - 6) + "' font-size='9.5' text-anchor='middle'>" + labels[i] + "</text>";
+    }
+
+    // today marker
+    if (actualCount > 0 && actualCount <= n) {
+      var tx = x(actualCount - 1);
+      svg += "<line class='today-line' x1='" + tx + "' x2='" + tx + "' y1='" + padT + "' y2='" + (padT + plotH) + "'/>";
+    }
+
+    series.forEach(function (s) {
+      var solidPts = [], dashPts = [];
+      for (var i2 = 0; i2 < n; i2++) {
+        var pt = x(i2) + "," + y(s.values[i2]);
+        if (i2 < actualCount) solidPts.push(pt);
+        if (i2 >= actualCount - 1) dashPts.push(pt);
+      }
+      if (solidPts.length > 1) {
+        svg += "<polyline points='" + solidPts.join(" ") + "' fill='none' stroke='" + s.color + "' stroke-width='2.25' stroke-linecap='round' stroke-linejoin='round'/>";
+      }
+      if (dashPts.length > 1) {
+        svg += "<polyline points='" + dashPts.join(" ") + "' fill='none' stroke='" + s.color + "' stroke-width='2' stroke-dasharray='5 4' stroke-linecap='round' stroke-linejoin='round' opacity='0.75'/>";
+      }
+      // endpoint dot at last actual value
+      if (!skipEndDot && actualCount > 0) {
+        var ei = actualCount - 1;
+        svg += "<circle cx='" + x(ei) + "' cy='" + y(s.values[ei]) + "' r='4' fill='" + s.color + "'/>";
+      }
+      // hollow dots for projected milestones
+      for (var i3 = actualCount; i3 < n; i3++) {
+        svg += "<circle cx='" + x(i3) + "' cy='" + y(s.values[i3]) + "' r='3' fill='var(--surface)' stroke='" + s.color + "' stroke-width='1.75'/>";
+      }
+    });
+
+    svg += "</svg>";
+    container.innerHTML = svg;
+  }
+
+  function kLabel(v) {
+    if (v === 0) return "0";
+    if (Math.abs(v) >= 1000) return Math.round(v / 1000) + "k";
+    return Math.round(v).toString();
+  }
+})();
+</script>
