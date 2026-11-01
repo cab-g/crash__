@@ -18,6 +18,11 @@
     --debt-uk: #3d6fa5;
     --debt-nl: #8a5ea8;
     --alecta: #a8546b;
+    --isk-vwce: #3f8f5f;
+    --isk-msci: #c9a227;
+    --isk-google: #4a7fb5;
+    --isk-samsung: #2f97b5;
+    --isk-apple: #6b7280;
     --accent: #1f7a78;
     --radius: 14px;
     --shadow: 0 1px 2px rgba(22, 38, 42, 0.06), 0 8px 24px -12px rgba(22, 38, 42, 0.18);
@@ -41,6 +46,11 @@
       --debt-uk: #7fa8d6;
       --debt-nl: #b79ddb;
       --alecta: #d98aa0;
+      --isk-vwce: #6fcf97;
+      --isk-msci: #e3c66c;
+      --isk-google: #8fb8e3;
+      --isk-samsung: #7fd3e3;
+      --isk-apple: #a6acb8;
       --accent: #56bcb8;
       --shadow: 0 1px 2px rgba(0, 0, 0, 0.3), 0 8px 24px -12px rgba(0, 0, 0, 0.5);
       color-scheme: dark;
@@ -63,6 +73,11 @@
     --debt-uk: #7fa8d6;
     --debt-nl: #b79ddb;
     --alecta: #d98aa0;
+    --isk-vwce: #6fcf97;
+    --isk-msci: #e3c66c;
+    --isk-google: #8fb8e3;
+    --isk-samsung: #7fd3e3;
+    --isk-apple: #a6acb8;
     --accent: #56bcb8;
     --shadow: 0 1px 2px rgba(0, 0, 0, 0.3), 0 8px 24px -12px rgba(0, 0, 0, 0.5);
     color-scheme: dark;
@@ -237,6 +252,20 @@
       </div>
     </section>
 
+    <section class="card" id="iskCard" hidden>
+      <h2>ISK investments</h2>
+      <div class="card-sub">Value of each holding vs. total contributions put in.</div>
+      <div id="chartIsk"></div>
+      <div class="legend">
+        <span><i class="swatch dashed" style="color:var(--ink-faint)"></i> Total put in</span>
+        <span><i class="swatch" style="background:var(--isk-vwce)"></i> VWCE</span>
+        <span><i class="swatch" style="background:var(--isk-msci)"></i> SPDR MSCI World</span>
+        <span><i class="swatch" style="background:var(--isk-google)"></i> Google</span>
+        <span><i class="swatch" style="background:var(--isk-samsung)"></i> Samsung</span>
+        <span><i class="swatch" style="background:var(--isk-apple)"></i> Apple</span>
+      </div>
+    </section>
+
     <section class="card" id="pensionCard" hidden>
       <h2>Occupational pension</h2>
       <div class="card-sub">CDON contributions into Movestic Aktiv 100, against the older Alecta pot from a previous employer — checked on the 1st of each month.</div>
@@ -370,18 +399,20 @@
       sb.from("budget_lines").select("*").order("sort_order", { ascending: true }),
       sb.from("debt_phases").select("*").order("sort_order", { ascending: true }),
       sb.from("pension_tracking").select("*").order("date", { ascending: true }),
-      sb.from("student_debt_tracking").select("*").order("date", { ascending: true })
+      sb.from("student_debt_tracking").select("*").order("date", { ascending: true }),
+      sb.from("isk_tracking").select("*").order("date", { ascending: true })
     ]).then(function (results) {
       var snapshots = (results[0].data || []);
       var budget = (results[1].data || []);
       var phases = (results[2].data || []);
       var pension = (results[3].data || []);
       var studentDebt = (results[4].data || []);
-      render(snapshots, budget, phases, pension, studentDebt);
+      var isk = (results[5].data || []);
+      render(snapshots, budget, phases, pension, studentDebt, isk);
     });
   }
 
-  function render(snapshots, budget, phases, pension, studentDebt) {
+  function render(snapshots, budget, phases, pension, studentDebt, isk) {
     if (!snapshots.length) return;
 
     var latestActual = null;
@@ -432,6 +463,20 @@
     var variableTotal = byGroup["Variable"].reduce(function (s, b) { return s + b.budgeted_sek; }, 0);
     var surplus = netSalary - fixedTotal - variableTotal;
     $("surplusValue").textContent = sek(surplus);
+
+    // ---- ISK investments chart ----
+    if (isk.length) {
+      $("iskCard").hidden = false;
+      var iMonths = isk.map(function (p) { return monthLabel(p.date); });
+      drawChart($("chartIsk"), iMonths, [
+        { key: "contrib", color: "var(--ink-faint)", dashedAll: true, values: isk.map(function (p) { return (p.contributions_cumulative_sek == null ? 0 : p.contributions_cumulative_sek); }) },
+        { key: "vwce", color: "var(--isk-vwce)", values: isk.map(function (p) { return (p.vwce_sek == null ? 0 : p.vwce_sek); }) },
+        { key: "msci", color: "var(--isk-msci)", values: isk.map(function (p) { return (p.msci_world_sek == null ? 0 : p.msci_world_sek); }) },
+        { key: "google", color: "var(--isk-google)", values: isk.map(function (p) { return (p.google_sek == null ? 0 : p.google_sek); }) },
+        { key: "samsung", color: "var(--isk-samsung)", values: isk.map(function (p) { return (p.samsung_sek == null ? 0 : p.samsung_sek); }) },
+        { key: "apple", color: "var(--isk-apple)", values: isk.map(function (p) { return (p.apple_sek == null ? 0 : p.apple_sek); }) }
+      ], isk.length, true);
+    }
 
     // ---- pension chart ----
     if (pension.length) {
