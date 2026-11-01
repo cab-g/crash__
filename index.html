@@ -242,22 +242,20 @@
       </div>
     </section>
 
-    <section class="card">
-      <h2>Surplus vs. buffer</h2>
-      <div class="card-sub">What net salary minus expenses generates each month, against what's actually landing in the buffer.</div>
-      <div id="chartSecondary"></div>
+    <section class="card" id="studentDebtUkCard" hidden>
+      <h2>Student debt — UK (parked)</h2>
+      <div class="card-sub">UK student loan — tracked separately since it's not on the payoff sprint.</div>
+      <div id="chartStudentDebtUK"></div>
       <div class="legend">
-        <span><i class="swatch" style="background:var(--ink-dim)"></i> Cumulative surplus</span>
-        <span><i class="swatch" style="background:var(--cash)"></i> Buffer balance</span>
+        <span><i class="swatch" style="background:var(--debt-uk)"></i> UK student loan</span>
       </div>
     </section>
 
-    <section class="card" id="studentDebtCard" hidden>
-      <h2>Student debt (parked)</h2>
-      <div class="card-sub">UK student loan and NL stufi — tracked separately since neither is on the payoff sprint.</div>
-      <div id="chartStudentDebt"></div>
+    <section class="card" id="studentDebtNlCard" hidden>
+      <h2>Student debt — NL (parked)</h2>
+      <div class="card-sub">NL stufi — tracked separately since it's not on the payoff sprint.</div>
+      <div id="chartStudentDebtNL"></div>
       <div class="legend">
-        <span><i class="swatch" style="background:var(--debt-uk)"></i> UK student loan</span>
         <span><i class="swatch" style="background:var(--debt-nl)"></i> NL stufi</span>
       </div>
     </section>
@@ -408,19 +406,6 @@
     var surplus = netSalary - fixedTotal - variableTotal;
     $("surplusValue").textContent = sek(surplus);
 
-    // ---- secondary chart: cumulative surplus vs buffer ----
-    var cumulative = [];
-    var running = 0;
-    for (var m = 0; m < months.length; m++) {
-      if (m > 0) running += surplus;
-      cumulative.push(running);
-    }
-    var bufferSeries = snapshots.map(function (s) { return s.cash_sek; });
-    drawChart($("chartSecondary"), months, [
-      { key: "surplus", color: "var(--ink-dim)", values: cumulative },
-      { key: "buffer", color: "var(--cash)", values: bufferSeries }
-    ], actualCount, true);
-
     // ---- pension chart ----
     if (pension.length) {
       $("pensionCard").hidden = false;
@@ -433,12 +418,17 @@
       ], pension.length, true);
     }
 
-    // ---- student debt chart ----
+    // ---- student debt charts (UK and NL, separate) ----
     if (studentDebt.length) {
-      $("studentDebtCard").hidden = false;
       var sMonths = studentDebt.map(function (s) { return monthLabel(s.date); });
-      drawChart($("chartStudentDebt"), sMonths, [
-        { key: "uk", color: "var(--debt-uk)", values: studentDebt.map(function (s) { return (s.uk_loan_sek == null ? 0 : s.uk_loan_sek); }) },
+
+      $("studentDebtUkCard").hidden = false;
+      drawChart($("chartStudentDebtUK"), sMonths, [
+        { key: "uk", color: "var(--debt-uk)", values: studentDebt.map(function (s) { return (s.uk_loan_sek == null ? 0 : s.uk_loan_sek); }) }
+      ], studentDebt.length, true);
+
+      $("studentDebtNlCard").hidden = false;
+      drawChart($("chartStudentDebtNL"), sMonths, [
         { key: "nl", color: "var(--debt-nl)", values: studentDebt.map(function (s) { return (s.nl_stufi_sek == null ? 0 : s.nl_stufi_sek); }) }
       ], studentDebt.length, true);
     }
