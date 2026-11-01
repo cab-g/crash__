@@ -152,6 +152,14 @@
   .surplus-line { display: flex; justify-content: space-between; align-items: baseline; margin-top: 14px; padding-top: 12px; border-top: 1px solid var(--line); }
   .surplus-line .val { font-size: 20px; font-weight: 600; color: var(--cash); }
 
+  .debt-grid { display: grid; grid-template-columns: 170px 1fr; gap: 20px; align-items: center; margin-top: 12px; }
+  .debt-pie-col { display: flex; flex-direction: column; align-items: center; }
+  .debt-pie-col svg.pie { width: 100%; max-width: 148px; height: auto; }
+  .debt-pie-col .legend { flex-direction: column; align-items: flex-start; gap: 6px; margin-top: 12px; font-size: 11.5px; }
+  @media (max-width: 640px) {
+    .debt-grid { grid-template-columns: 1fr; }
+  }
+
   .phase-list { display: flex; flex-direction: column; gap: 12px; margin-top: 10px; }
   .phase {
     border: 1px solid var(--line); border-radius: 10px; padding: 11px 13px; background: var(--surface-2);
@@ -243,19 +251,31 @@
 
     <section class="card" id="studentDebtUkCard" hidden>
       <h2>Student debt — UK (parked)</h2>
-      <div class="card-sub">UK student loan — tracked separately since it's not on the payoff sprint.</div>
-      <div id="chartStudentDebtUK"></div>
-      <div class="legend">
-        <span><i class="swatch" style="background:var(--debt-uk)"></i> UK student loan</span>
+      <div class="card-sub">Plan 2 SLC loan — 6% interest, £90/month direct debit; written off 30 years after the April following graduation.</div>
+      <div class="debt-grid">
+        <div class="debt-pie-col">
+          <div id="pieStudentDebtUK"></div>
+          <div class="legend" id="pieStudentDebtUKLegend"></div>
+        </div>
+        <div>
+          <div class="card-sub" style="margin:0 0 4px;">Projected balance, next 12 months</div>
+          <div id="chartStudentDebtUKProjection"></div>
+        </div>
       </div>
     </section>
 
     <section class="card" id="studentDebtNlCard" hidden>
       <h2>Student debt — NL (parked)</h2>
-      <div class="card-sub">NL stufi — tracked separately since it's not on the payoff sprint.</div>
-      <div id="chartStudentDebtNL"></div>
-      <div class="legend">
-        <span><i class="swatch" style="background:var(--debt-nl)"></i> NL stufi</span>
+      <div class="card-sub">DUO stufi — 2.57% fixed until 31 Dec 2029, €378/year; 363 of 420 repayment months left.</div>
+      <div class="debt-grid">
+        <div class="debt-pie-col">
+          <div id="pieStudentDebtNL"></div>
+          <div class="legend" id="pieStudentDebtNLLegend"></div>
+        </div>
+        <div>
+          <div class="card-sub" style="margin:0 0 4px;">Projected balance, next 12 months</div>
+          <div id="chartStudentDebtNLProjection"></div>
+        </div>
       </div>
     </section>
 
@@ -417,19 +437,19 @@
       ], pension.length, true);
     }
 
-    // ---- student debt charts (UK and NL, separate) ----
+    // ---- student debt: pie (paid vs remaining) + 12-month projection, per loan ----
     if (studentDebt.length) {
-      var sMonths = studentDebt.map(function (s) { return monthLabel(s.date); });
-
-      $("studentDebtUkCard").hidden = false;
-      drawChart($("chartStudentDebtUK"), sMonths, [
-        { key: "uk", color: "var(--debt-uk)", values: studentDebt.map(function (s) { return (s.uk_loan_sek == null ? 0 : s.uk_loan_sek); }) }
-      ], studentDebt.length, true);
-
-      $("studentDebtNlCard").hidden = false;
-      drawChart($("chartStudentDebtNL"), sMonths, [
-        { key: "nl", color: "var(--debt-nl)", values: studentDebt.map(function (s) { return (s.nl_stufi_sek == null ? 0 : s.nl_stufi_sek); }) }
-      ], studentDebt.length, true);
+      var latestDebt = studentDebt[studentDebt.length - 1];
+      renderDebtCard(
+        $("studentDebtUkCard"), $("pieStudentDebtUK"), $("pieStudentDebtUKLegend"), $("chartStudentDebtUKProjection"),
+        "var(--debt-uk)", latestDebt.uk_loan_sek, latestDebt.uk_original_sek, latestDebt.uk_rate_pct,
+        latestDebt.uk_repayment_sek, latestDebt.uk_repayment_freq, latestDebt.date
+      );
+      renderDebtCard(
+        $("studentDebtNlCard"), $("pieStudentDebtNL"), $("pieStudentDebtNLLegend"), $("chartStudentDebtNLProjection"),
+        "var(--debt-nl)", latestDebt.nl_stufi_sek, latestDebt.nl_original_sek, latestDebt.nl_rate_pct,
+        latestDebt.nl_repayment_sek, latestDebt.nl_repayment_freq, latestDebt.date
+      );
     }
 
     // ---- roadmap ----
@@ -465,6 +485,40 @@
   function fmtDate(dateStr) {
     var d = new Date(dateStr + "T00:00:00");
     return d.toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" });
+  }
+  function addMonthsLabel(dateStr, n) {
+    var d = new Date(dateStr + "T00:00:00");
+    d.setMonth(d.getMonth() + n);
+    return d.toLocaleDateString("en-GB", { month: "short" });
+  }
+
+  // ---- student debt card: pie (paid vs remaining) + 12-month projection ----
+  function renderDebtCard(cardEl, pieEl, legendEl, chartEl, color, current, original, ratePct, repaymentSek, repaymentFreq, dateStr) {
+    if (current == null) return;
+    cardEl.hidden = false;
+
+    var orig = (original == null ? current : original);
+    var paid = Math.max(0, orig - current);
+    var remain = current;
+    drawPieChart(pieEl, paid, remain, "var(--ink-faint)", color);
+    var total = paid + remain || 1;
+    var paidPct = Math.round((paid / total) * 100);
+    var remainPct = 100 - paidPct;
+    legendEl.innerHTML =
+      "<span><i class='swatch' style='background:var(--ink-faint)'></i> Paid " + sek(paid) + " (" + paidPct + "%)</span>" +
+      "<span><i class='swatch' style='background:" + color + "'></i> Remaining " + sek(remain) + " (" + remainPct + "%)</span>";
+
+    var months = [monthLabel(dateStr)];
+    var balances = [current];
+    var bal = current;
+    var monthlyRate = ((ratePct == null ? 0 : ratePct) / 100) / 12;
+    var monthlyRepay = repaymentFreq === "annual" ? (repaymentSek == null ? 0 : repaymentSek) / 12 : (repaymentSek == null ? 0 : repaymentSek);
+    for (var i = 1; i <= 12; i++) {
+      bal = Math.max(0, bal * (1 + monthlyRate) - monthlyRepay);
+      balances.push(bal);
+      months.push(addMonthsLabel(dateStr, i));
+    }
+    drawChart(chartEl, months, [{ key: "balance", color: color, values: balances }], 1);
   }
 
   // ---------------- chart drawing (hand-rolled SVG) ----------------
@@ -531,6 +585,34 @@
       }
     });
 
+    svg += "</svg>";
+    container.innerHTML = svg;
+  }
+
+  // ---------------- pie chart (hand-rolled SVG) ----------------
+  function drawPieChart(container, paidVal, remainVal, paidColor, remainColor) {
+    var total = paidVal + remainVal;
+    if (total <= 0) { container.innerHTML = ""; return; }
+    var size = 150, r = 68, cx = size / 2, cy = size / 2;
+
+    function polar(deg, radius) {
+      var rad = (deg - 90) * Math.PI / 180;
+      return [cx + radius * Math.cos(rad), cy + radius * Math.sin(rad)];
+    }
+    function slicePath(startDeg, endDeg) {
+      if (endDeg - startDeg >= 359.999) {
+        return "M" + cx + "," + (cy - r) + " A" + r + "," + r + " 0 1 1 " + (cx - 0.01) + "," + (cy - r) + " Z";
+      }
+      var large = (endDeg - startDeg) > 180 ? 1 : 0;
+      var p1 = polar(startDeg, r), p2 = polar(endDeg, r);
+      return "M" + cx + "," + cy + " L" + p1[0].toFixed(2) + "," + p1[1].toFixed(2) +
+        " A" + r + "," + r + " 0 " + large + " 1 " + p2[0].toFixed(2) + "," + p2[1].toFixed(2) + " Z";
+    }
+
+    var paidDeg = (paidVal / total) * 360;
+    var svg = "<svg class='pie' viewBox='0 0 " + size + " " + size + "' xmlns='http://www.w3.org/2000/svg'>";
+    if (paidVal > 0) svg += "<path d='" + slicePath(0, paidDeg) + "' fill='" + paidColor + "'/>";
+    if (remainVal > 0) svg += "<path d='" + slicePath(paidDeg, 360) + "' fill='" + remainColor + "'/>";
     svg += "</svg>";
     container.innerHTML = svg;
   }
