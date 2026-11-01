@@ -249,21 +249,6 @@
       </div>
     </section>
 
-    <section class="card" id="studentDebtUkCard" hidden>
-      <h2>Student debt — UK</h2>
-      <div class="card-sub">Plan 2 SLC loan — 6% interest, £90/month direct debit; written off 30 years after the April following graduation.</div>
-      <div class="debt-grid">
-        <div class="debt-pie-col">
-          <div id="pieStudentDebtUK"></div>
-          <div class="legend" id="pieStudentDebtUKLegend"></div>
-        </div>
-        <div>
-          <div class="card-sub" style="margin:0 0 4px;">Projected balance, next 12 months</div>
-          <div id="chartStudentDebtUKProjection"></div>
-        </div>
-      </div>
-    </section>
-
     <section class="card" id="studentDebtNlCard" hidden>
       <h2>Student debt — NL</h2>
       <div class="card-sub">DUO stufi — 2.57% fixed until 31 Dec 2029, €378/year; 363 of 420 repayment months left.</div>
@@ -273,8 +258,31 @@
           <div class="legend" id="pieStudentDebtNLLegend"></div>
         </div>
         <div>
-          <div class="card-sub" style="margin:0 0 4px;">Projected balance, next 12 months</div>
+          <div class="card-sub" style="margin:0 0 4px;">Monthly interest vs repayment, next 12 months</div>
           <div id="chartStudentDebtNLProjection"></div>
+          <div class="legend">
+            <span><i class="swatch dashed" style="color:var(--debt)"></i> Interest added</span>
+            <span><i class="swatch dashed" style="color:var(--cash)"></i> Repayment</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="card" id="studentDebtUkCard" hidden>
+      <h2>Student debt — UK</h2>
+      <div class="card-sub">Plan 2 SLC loan — 6% interest, £90/month direct debit; written off 30 years after the April following graduation.</div>
+      <div class="debt-grid">
+        <div class="debt-pie-col">
+          <div id="pieStudentDebtUK"></div>
+          <div class="legend" id="pieStudentDebtUKLegend"></div>
+        </div>
+        <div>
+          <div class="card-sub" style="margin:0 0 4px;">Monthly interest vs repayment, next 12 months</div>
+          <div id="chartStudentDebtUKProjection"></div>
+          <div class="legend">
+            <span><i class="swatch dashed" style="color:var(--debt)"></i> Interest added</span>
+            <span><i class="swatch dashed" style="color:var(--cash)"></i> Repayment</span>
+          </div>
         </div>
       </div>
     </section>
@@ -461,7 +469,7 @@
       }
       var amountText = p.target_sek
         ? sek(p.current_sek) + " of " + sek(p.target_sek)
-        : sek(p.current_sek) + " owed";
+        : (p.is_debt === false ? sek(p.current_sek) + " saved" : sek(p.current_sek) + " owed");
       return "<div class='phase'>" +
         "<div class='phase-top'><span class='title'>" + p.title + "</span>" +
         "<span class='pill " + p.status + "'>" + p.status.replace("_", " ") + "</span></div>" +
@@ -508,39 +516,58 @@
       "<span><i class='swatch' style='background:var(--ink-faint)'></i> Paid " + sek(paid) + " (" + paidPct + "%)</span>" +
       "<span><i class='swatch' style='background:" + color + "'></i> Remaining " + sek(remain) + " (" + remainPct + "%)</span>";
 
-    var months = [monthLabel(dateStr)];
-    var balances = [current];
+    var months = [];
+    var interestSeries = [];
+    var repaymentSeries = [];
     var bal = current;
     var monthlyRate = ((ratePct == null ? 0 : ratePct) / 100) / 12;
     var monthlyRepay = repaymentFreq === "annual" ? (repaymentSek == null ? 0 : repaymentSek) / 12 : (repaymentSek == null ? 0 : repaymentSek);
     for (var i = 1; i <= 12; i++) {
-      bal = Math.max(0, bal * (1 + monthlyRate) - monthlyRepay);
-      balances.push(bal);
+      var interestThisMonth = bal * monthlyRate;
+      interestSeries.push(interestThisMonth);
+      repaymentSeries.push(monthlyRepay);
+      bal = Math.max(0, bal + interestThisMonth - monthlyRepay);
       months.push(addMonthsLabel(dateStr, i));
     }
-    drawChart(chartEl, months, [{ key: "balance", color: color, values: balances }], 1);
+    drawChart(chartEl, months, [
+      { key: "interest", color: "var(--debt)", dashedAll: true, values: interestSeries },
+      { key: "repayment", color: "var(--cash)", dashedAll: true, values: repaymentSeries }
+    ], 0, true, true);
   }
 
   // ---------------- chart drawing (hand-rolled SVG) ----------------
-  function drawChart(container, labels, series, actualCount, skipEndDot) {
+  function drawChart(container, labels, series, actualCount, skipEndDot, zoomY) {
     var W = 640, H = 260, padL = 46, padR = 12, padT = 14, padB = 28;
     var plotW = W - padL - padR, plotH = H - padT - padB;
     var n = labels.length;
     var xStep = n > 1 ? plotW / (n - 1) : 0;
 
-    var maxVal = 0;
-    series.forEach(function (s) { s.values.forEach(function (v) { if (v > maxVal) maxVal = v; }); });
-    maxVal = maxVal <= 0 ? 1 : maxVal * 1.15;
+    var allVals = [];
+    series.forEach(function (s) { s.values.forEach(function (v) { allVals.push(v); }); });
+    var rawMin = allVals.length ? Math.min.apply(null, allVals) : 0;
+    var rawMax = allVals.length ? Math.max.apply(null, allVals) : 0;
+
+    var minVal, maxVal;
+    if (zoomY) {
+      var span = rawMax - rawMin;
+      var pad = span > 0 ? span * 0.2 : Math.max(Math.abs(rawMax) * 0.1, 1);
+      minVal = rawMin >= 0 ? Math.max(0, rawMin - pad) : rawMin - pad;
+      maxVal = rawMax + pad;
+      if (maxVal <= minVal) maxVal = minVal + 1;
+    } else {
+      minVal = 0;
+      maxVal = rawMax <= 0 ? 1 : rawMax * 1.15;
+    }
 
     function x(i) { return padL + i * xStep; }
-    function y(v) { return padT + plotH - (v / maxVal) * plotH; }
+    function y(v) { return padT + plotH - ((v - minVal) / (maxVal - minVal)) * plotH; }
 
     var svg = "<svg class='chart' viewBox='0 0 " + W + " " + H + "' xmlns='http://www.w3.org/2000/svg'>";
 
     // gridlines + y labels (4 bands)
     var bands = 4;
     for (var b = 0; b <= bands; b++) {
-      var val = (maxVal / bands) * b;
+      var val = minVal + ((maxVal - minVal) / bands) * b;
       var yy = y(val);
       svg += "<line class='gridline' x1='" + padL + "' x2='" + (W - padR) + "' y1='" + yy + "' y2='" + yy + "'/>";
       svg += "<text x='" + (padL - 8) + "' y='" + (yy + 3) + "' font-size='9.5' text-anchor='end'>" + kLabel(val) + "</text>";
